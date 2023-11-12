@@ -1,6 +1,6 @@
 use ndarray::{Array2, Ix2};
 use ocl::{ProQue, Result};
-use simple_ocl::{prog_que_from_source, DeviceToFrom, PairedBuffers};
+use simple_ocl::{prog_que_from_source, try_prog_que_from_source, DeviceToFrom, PairedBuffers};
 
 #[derive(DeviceToFrom)]
 struct ExampleProg {
