@@ -1,13 +1,13 @@
 use ndarray::Array2;
-use ocl::{ProQue, Result};
+use ocl::{Event, ProQue, Result};
 use simple_ocl::{
-    print_ocl_short_info, prog_que_from_source, set_ocl_device, DeviceToFrom, PairedBuffers,
-    PairedBuffers2,
+    print_ocl_short_info, prog_que_from_source, DeviceToFrom, PairedBuffers, PairedBuffers2,
 };
 
 #[derive(DeviceToFrom)]
 struct ExampleProg {
     que: ProQue,
+    status: Event,
     #[dev_to_from(from = false)]
     a: PairedBuffers2<i32>,
     b: PairedBuffers2<f32>,
@@ -50,7 +50,15 @@ impl ExampleProg {
         let b = PairedBuffers::create_from(b_c, &mut que);
         let c = PairedBuffers::create_from(c_c, &mut que);
 
-        Self { que, a, b, c }
+        let status = Event::empty();
+
+        Self {
+            que,
+            status,
+            a,
+            b,
+            c,
+        }
     }
 
     fn run(&mut self) -> Result<()> {
@@ -65,10 +73,11 @@ impl ExampleProg {
             .build()?;
 
         unsafe {
-            kernel.enq()?;
+            kernel.cmd().enew(&mut self.status).enq()?;
         }
 
-        self.retrieve_pairedbuffs()?;
+        // if this is to be blocking, then can just sync here
+        // self.retrieve_pairedbuffs()?;
 
         Ok(())
     }
@@ -80,6 +89,17 @@ fn main() -> Result<()> {
 
     let mut example = ExampleProg::new((5, 5));
     example.run()?;
+
+    //// Non-blocking related
+    let mut i = 0;
+    while !example.status.is_complete()? && i < 10000 {
+        print!("Do some stuff in the meantime {i}\r");
+        i += 1;
+    }
+    println!();
+
+    example.retrieve_pairedbuffs()?;
+    ////
 
     dbg!(&example.a.host);
     dbg!(&example.b.host);
