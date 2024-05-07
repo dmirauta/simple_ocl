@@ -1,24 +1,26 @@
-use ndarray::{Array2, Ix2};
+use ndarray::Array2;
 use ocl::{ProQue, Result};
-use simple_ocl::{prog_que_from_source, try_prog_que_from_source, DeviceToFrom, PairedBuffers};
+use simple_ocl::{
+    print_ocl_short_info, prog_que_from_source, DeviceToFrom, PairedBuffers, PairedBuffers2,
+};
 
 #[derive(DeviceToFrom)]
 struct ExampleProg {
     que: ProQue,
     #[dev_to_from(from = false)]
-    a: PairedBuffers<i32, Ix2>,
-    b: PairedBuffers<f32, Ix2>,
+    a: PairedBuffers2<i32>,
+    b: PairedBuffers2<f32>,
     #[dev_to_from(to = false)]
-    c: PairedBuffers<f64, Ix2>,
+    c: PairedBuffers2<f64>,
 }
 
-static MY_CL_PROG: &'static str = "
+static MY_CL_PROG: &str = "
 __kernel void test_kernel(__global int    *a,
                           __global float  *b,
                           __global double *c)
 {
     int k = get_global_id(0);
-    c[k] = ((float) a[k]) + ((float) b[k]); 
+    c[k] = a[k] + b[k]; 
 #ifdef CHANGE_B
     b[k] += 0.25;
 #endif
@@ -72,6 +74,8 @@ impl ExampleProg {
 }
 
 fn main() -> Result<()> {
+    print_ocl_short_info();
+
     let mut example = ExampleProg::new((5, 5));
     example.run()?;
 
