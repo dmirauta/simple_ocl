@@ -39,9 +39,11 @@ pub fn dev_to_from(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         unimplemented!("DeviceToFrom not implemented for enums or unions.");
     };
     let fields = fields.iter().filter(|f| {
-        get_type_string(f)
-            .expect("no type path?")
-            .contains("PairedBuffers")
+        if let Some(s) = get_type_string(f) {
+            s.contains("PairedBuffers")
+        } else {
+            false
+        }
     });
     let mut devices_to: Vec<_> = vec![];
     let mut devices_from: Vec<_> = vec![];
