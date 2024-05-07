@@ -34,11 +34,11 @@ impl<N: OclPrm, D: Dimension> PairedBuffers<N, D> {
 }
 
 thread_local! {
-    static DEVICE: RefCell<Option<Device>> = const { RefCell::new(None) };
+    static PLATFORM_DEVICE: RefCell<Option<(Platform, Device)>> = const { RefCell::new(None) };
 }
 
 pub fn set_ocl_device(platform_idx: usize, dev_idx: usize) {
-    DEVICE.with_borrow_mut(|rc| {
+    PLATFORM_DEVICE.with_borrow_mut(|rc| {
         let plats = Platform::list();
         if plats.is_empty() {
             println!("No OpenCL platforms found.");
@@ -61,7 +61,7 @@ pub fn set_ocl_device(platform_idx: usize, dev_idx: usize) {
             if dev_idx < devs.len() {
                 let dev = devs[dev_idx];
                 let dev_name = dev.name().unwrap_or("<Could not get device name>".into());
-                *rc = Some(dev);
+                *rc = Some((plat, dev));
                 println!("Setting device idx {dev_idx} ({dev_name}) from {plat_name}.");
             } else {
                 println!(
@@ -94,11 +94,12 @@ pub fn try_prog_que_from_source(
     let mut pqb = ProQue::builder();
     pqb.prog_bldr(prog_build);
 
-    if let Some(device) = DEVICE.with_borrow(|rc| *rc) {
+    if let Some((plat, device)) = PLATFORM_DEVICE.with_borrow(|rc| *rc) {
         let dev_name = device
             .name()
             .unwrap_or("<Could not get device name>".into());
         println!("Using {dev_name} in {prog_name}");
+        pqb.platform(plat);
         pqb.device(device);
     }
 
@@ -155,10 +156,7 @@ pub fn print_ocl_short_info() {
         println!("\nPlatform (driver) {j}: {}", plat.name().unwrap());
 
         for (i, dev) in devs.iter().enumerate() {
-            println!(
-                "\n{spacing}Device {i} {}",
-                if i == 0 { "(default)" } else { "" }
-            );
+            println!("\n{spacing}Device {i}",);
 
             let spacing = spacing.repeat(2);
             match dev.name() {

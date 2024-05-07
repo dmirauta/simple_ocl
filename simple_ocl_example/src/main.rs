@@ -1,7 +1,8 @@
 use ndarray::Array2;
 use ocl::{ProQue, Result};
 use simple_ocl::{
-    print_ocl_short_info, prog_que_from_source, DeviceToFrom, PairedBuffers, PairedBuffers2,
+    print_ocl_short_info, prog_que_from_source, set_ocl_device, DeviceToFrom, PairedBuffers,
+    PairedBuffers2,
 };
 
 #[derive(DeviceToFrom)]
@@ -75,6 +76,7 @@ impl ExampleProg {
 
 fn main() -> Result<()> {
     print_ocl_short_info();
+    // set_ocl_device(1, 0);
 
     let mut example = ExampleProg::new((5, 5));
     example.run()?;
