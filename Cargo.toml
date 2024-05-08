@@ -1,2 +1,3 @@
 [workspace]
 members = ["simple_ocl", "simple_ocl_example", "simple_ocl_proc"]
+resolver = "2"
