@@ -28,6 +28,7 @@ fn get_type_string(f: &Field) -> Option<String> {
 #[proc_macro_derive(DeviceToFrom, attributes(dev_to_from))]
 pub fn dev_to_from(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let name = input.ident;
     let fields = if let Data::Struct(DataStruct { fields, .. }) = input.data {
         if let Fields::Named(fields_named) = fields {
@@ -69,7 +70,7 @@ pub fn dev_to_from(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         });
     }
     quote!(
-        impl ::simple_ocl::DeviceToFrom for #name {
+        impl #impl_generics ::simple_ocl::DeviceToFrom for #name #ty_generics #where_clause {
             fn send_pairedbuffs(&self) -> ocl::Result<()> {
                 #(#devices_to)*
                 Ok(())
