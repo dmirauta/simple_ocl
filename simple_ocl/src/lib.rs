@@ -174,3 +174,12 @@ pub fn print_ocl_short_info() {
     }
     println!();
 }
+
+pub fn selected_device_supports_doubles() -> Option<bool> {
+    let (_, device) = PLATFORM_DEVICE.with_borrow(|rc| *rc)?;
+    let ext = device
+        .info(DeviceInfo::Extensions)
+        .map_err(|_| println!("Could not get device extensions."))
+        .ok()?;
+    Some(ext.to_string().contains("cl_khr_fp64"))
+}
