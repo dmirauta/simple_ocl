@@ -116,7 +116,13 @@ pub fn prog_que_from_source(
     name: impl Into<String>,
     compiler_opts: Vec<String>,
 ) -> ProQue {
-    try_prog_que_from_source(source, name, compiler_opts).unwrap()
+    try_prog_que_from_source(source, name, compiler_opts)
+        .map_err(|e| {
+            if let ocl::Error::OclCore(ocl::core::Error::ProgramBuild(pbe)) = e {
+                eprintln!("{pbe}");
+            }
+        })
+        .unwrap()
 }
 
 /// try to make OCL program loading source from path
