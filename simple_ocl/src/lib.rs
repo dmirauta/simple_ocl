@@ -125,7 +125,7 @@ pub fn prog_que_from_source(
         .unwrap()
 }
 
-/// try to make OCL program loading source from path
+/// try to make OCL program, loading source from path
 pub fn try_prog_que_from_source_path(
     source_path: impl AsRef<Path>,
     compiler_opts: Vec<String>,
@@ -138,7 +138,7 @@ pub fn try_prog_que_from_source_path(
     )?)
 }
 
-/// make OCL program loading source from path
+/// make OCL program, loading source from path
 pub fn prog_que_from_source_path(
     source_path: impl AsRef<Path>,
     compiler_opts: Vec<String>,

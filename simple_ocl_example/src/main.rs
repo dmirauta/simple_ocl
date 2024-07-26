@@ -37,7 +37,7 @@ __kernel void test_kernel(__global int    *a,
 #endif
 }
 
-// could have additional kernels...
+// can define additional kernels in this program...
 ";
 
 impl ExampleProg {
@@ -71,7 +71,7 @@ impl ExampleProg {
         }
     }
 
-    fn run(&mut self) -> Result<()> {
+    fn run(&mut self, d: f32, blocking: bool) -> Result<()> {
         self.send_pairedbuffs()?;
 
         self.que.set_dims(self.shape);
@@ -81,15 +81,17 @@ impl ExampleProg {
             .arg(&self.a.device)
             .arg(&self.b.device)
             .arg(&self.c.device)
-            .arg(0.05f32)
+            .arg(d)
             .build()?;
 
         unsafe {
-            kernel.cmd().enew(&mut self.status).enq()?;
+            if blocking {
+                kernel.enq()?;
+                self.retrieve_pairedbuffs()?;
+            } else {
+                kernel.cmd().enew(&mut self.status).enq()?;
+            }
         }
-
-        // if this is to be blocking, then can just sync here
-        // self.retrieve_pairedbuffs()?;
 
         Ok(())
     }
@@ -100,17 +102,18 @@ fn main() -> Result<()> {
     // set_ocl_device(1, 0);
 
     let mut example = ExampleProg::new((5, 6));
-    example.run()?;
+    let blocking = false;
+    example.run(0.5, blocking)?;
 
-    //// Non-blocking related
-    let mut i = 0;
-    while !example.status.is_complete()? && i < 10000 {
-        print!("Do some stuff in the meantime {i}\r");
-        i += 1;
+    if !blocking {
+        let mut i = 0;
+        while !example.status.is_complete()? && i < 10000 {
+            print!("Doing other things while the kernel runs {i}\r");
+            i += 1;
+        }
+
+        example.retrieve_pairedbuffs()?;
     }
-
-    example.retrieve_pairedbuffs()?;
-    ////
 
     println!("\n\nEnd results:");
     dbg!(&example.a.host);
