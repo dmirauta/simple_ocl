@@ -1,5 +1,6 @@
 use std::{cell::RefCell, error::Error, fs, path::Path};
 
+use log::{error, info, warn};
 use ndarray::{Array, Dimension, Ix1, Ix2, Ix3};
 use ocl::{builders::ProgramBuilder, core::DeviceInfo, Buffer, Device, OclPrm, Platform, ProQue};
 
@@ -41,12 +42,12 @@ pub fn set_ocl_device(platform_idx: usize, dev_idx: usize) {
     PLATFORM_DEVICE.with_borrow_mut(|rc| {
         let plats = Platform::list();
         if plats.is_empty() {
-            println!("No OpenCL platforms found.");
+            warn!("No OpenCL platforms found.");
             return;
         }
         if platform_idx >= plats.len() {
-            println!(
-                "Platform idx {platform_idx} is invalid on machine with {} drivers.",
+            error!(
+                "OpenCL platform idx {platform_idx} is invalid on machine with {} drivers.",
                 plats.len()
             );
             return;
@@ -55,17 +56,17 @@ pub fn set_ocl_device(platform_idx: usize, dev_idx: usize) {
         let plat_name = plat
             .name()
             .unwrap_or("<Could not get platform name>".into());
-        println!("Setting platform idx {platform_idx} ({plat_name}).");
+        info!("Setting OpenCL platform idx {platform_idx} ({plat_name}).");
 
         if let Ok(devs) = Device::list_all(plat) {
             if dev_idx < devs.len() {
                 let dev = devs[dev_idx];
                 let dev_name = dev.name().unwrap_or("<Could not get device name>".into());
                 *rc = Some((plat, dev));
-                println!("Setting device idx {dev_idx} ({dev_name}) from {plat_name}.");
+                info!("Setting OpenCL device idx {dev_idx} ({dev_name}) from {plat_name}.");
             } else {
-                println!(
-                    "Device idx {dev_idx} invalid for platform with {} devices.",
+                error!(
+                    "OpenCl device idx {dev_idx} invalid for platform with {} devices.",
                     devs.len()
                 );
             }
@@ -98,14 +99,14 @@ pub fn try_prog_que_from_source(
         let dev_name = device
             .name()
             .unwrap_or("<Could not get device name>".into());
-        println!("Using {dev_name} in {prog_name}");
+        info!("Using {dev_name} in {prog_name}");
         pqb.platform(plat);
         pqb.device(device);
     }
 
     let que = pqb.build()?;
 
-    println!("{prog_name} compiled with options: {:?}\n", copts);
+    info!("{prog_name} compiled with options: {:?}\n", copts);
 
     Ok(que)
 }
@@ -119,7 +120,7 @@ pub fn prog_que_from_source(
     try_prog_que_from_source(source, name, compiler_opts)
         .map_err(|e| {
             if let ocl::Error::OclCore(ocl::core::Error::ProgramBuild(pbe)) = e {
-                eprintln!("{pbe}");
+                error!("{pbe}");
             }
         })
         .unwrap()
@@ -185,7 +186,7 @@ pub fn selected_device_supports_doubles() -> Option<bool> {
     let (_, device) = PLATFORM_DEVICE.with_borrow(|rc| *rc)?;
     let ext = device
         .info(DeviceInfo::Extensions)
-        .map_err(|_| println!("Could not get device extensions."))
+        .map_err(|_| error!("Could not get OpenCl device extensions."))
         .ok()?;
     Some(ext.to_string().contains("cl_khr_fp64"))
 }

@@ -98,8 +98,10 @@ impl ExampleProg {
 }
 
 fn main() -> Result<()> {
+    env_logger::init();
+
     print_ocl_short_info();
-    // set_ocl_device(1, 0);
+    // simple_ocl::set_ocl_device(1, 0);
 
     let mut example = ExampleProg::new((5, 6));
     let blocking = false;
